@@ -105,8 +105,15 @@ resource "azurerm_container_app" "app" {
   ingress {
     external_enabled = true # Make it publicly accessible
     target_port      = 8080 # The port your application container listens on
+    
     # transport        = "http" # or "http2", "tcp"
+    traffic_weight {
+    percentage      = 100
+    latest_revision = true
   }
+}
+
+  
 
   # Explicit dependency to ensure identity and its permissions are set up first
   depends_on = [
