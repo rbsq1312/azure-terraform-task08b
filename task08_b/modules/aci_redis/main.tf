@@ -21,9 +21,9 @@ resource "azurerm_container_group" "redis_ci" {
   container {
     name = "redis"
     # Using official Redis image from Microsoft Artifact Registry (MCR)
-    image  = "mcr.microsoft.com/oss/redis/redis:latest" # Or a specific version like :7.2
-    cpu    = 1.0                                        # Adjust as needed
-    memory = 1.5                                        # Adjust as needed
+    image  = "mcr.microsoft.com/oss/redis/redis:7.0" # Or a specific version like :7.2
+    cpu    = 1.0                                     # Adjust as needed
+    memory = 1.5                                     # Adjust as needed
     ports {
       port     = 6379
       protocol = "TCP"
