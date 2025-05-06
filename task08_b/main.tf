@@ -138,7 +138,7 @@ module "aca" {
   tags                = local.common_tags
 
   aca_env_name          = local.aca_env_name            # From root locals.tf
-  ca_name               = local.aca_name                # From root locals.tf
+  aca_name              = local.aca_name                # From root locals.tf
   workload_profile_type = var.aca_workload_profile_type # From root variables.tf
 
   docker_image_to_deploy = module.acr.docker_image_full_name_latest # Output from acr module
