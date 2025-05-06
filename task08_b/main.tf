@@ -138,12 +138,12 @@ module "aca" {
   tags                = local.common_tags
 
   aca_env_name          = local.aca_env_name            # From root locals.tf
-  aca_name              = local.aca_name                # From root locals.tf
+  ca_name               = local.aca_name                # From root locals.tf
   workload_profile_type = var.aca_workload_profile_type # From root variables.tf
 
   docker_image_to_deploy = module.acr.docker_image_full_name_latest # Output from acr module
   acr_id                 = module.acr.acr_id                        # Output from acr module
-  # acr_login_server       = module.acr.acr_login_server # Not explicitly needed by module if using managed identity for pull
+  acr_login_server       = module.acr.acr_login_server              # Not explicitly needed by module if using managed identity for pull
 
   key_vault_id                     = module.keyvault.key_vault_id     # Output from keyvault module
   redis_hostname_secret_name_in_kv = local.redis_hostname_secret_name # From root locals.tf
