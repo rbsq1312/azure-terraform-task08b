@@ -103,13 +103,13 @@ resource "azurerm_container_app" "app" {
   }
 
   ingress {
-    external_enabled = true 
-    target_port      = 8080 
+    external_enabled = true
+    target_port      = 8080
     # transport        = "http" 
 
     traffic_weight { # <--- THIS BLOCK MUST BE PRESENT
       percentage      = 100
-      latest_revision = true 
+      latest_revision = true
     }
   }
 
