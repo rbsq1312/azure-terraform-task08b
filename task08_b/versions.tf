@@ -43,19 +43,19 @@ provider "azurerm" {
 # Placeholder configuration (won't work until AKS module provides outputs)
 provider "kubectl" {
   # Configuration depends on AKS module outputs
-  # host                   = module.aks.host 
-  # client_certificate     = base64decode(module.aks.client_certificate)
-  # client_key             = base64decode(module.aks.client_key)
-  # cluster_ca_certificate = base64decode(module.aks.cluster_ca_certificate)
+  host                   = module.aks.host
+  client_certificate     = base64decode(module.aks.client_certificate)
+  client_key             = base64decode(module.aks.client_key)
+  cluster_ca_certificate = base64decode(module.aks.cluster_ca_certificate)
   load_config_file       = false # Usually false when configured directly
   alias                  = "k8s" # Alias if using separate k8s module
 }
 
 provider "kubernetes" {
   # Configuration depends on AKS module outputs
-  # host                   = module.aks.host
-  # client_certificate     = base64decode(module.aks.client_certificate)
-  # client_key             = base64decode(module.aks.client_key)
-  # cluster_ca_certificate = base64decode(module.aks.cluster_ca_certificate)
+  host                   = module.aks.host
+  client_certificate     = base64decode(module.aks.client_certificate)
+  client_key             = base64decode(module.aks.client_key)
+  cluster_ca_certificate = base64decode(module.aks.cluster_ca_certificate)
   alias                  = "k8s" # Alias if using separate k8s module
 }

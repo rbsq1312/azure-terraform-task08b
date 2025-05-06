@@ -1,9 +1,9 @@
 locals {
   # Example - Adjust prefix handling as needed
-  name_prefix    = var.name_prefix # Example: "cmtr-49b8ddc2-mod8b"
-  
+  name_prefix = var.name_prefix # Example: "cmtr-49b8ddc2-mod8b"
+
   rg_name        = "${local.name_prefix}-rg"
-  aci_redis_name = "${local.name_prefix}-redis-ci" # Changed from redis_aci_name for consistency
+  aci_redis_name = "${local.name_prefix}-redis-ci"            # Changed from redis_aci_name for consistency
   sa_name        = replace("${local.name_prefix}sa", "-", "") # Storage account names have restrictions
   keyvault_name  = "${local.name_prefix}-kv"
   acr_name       = replace("${local.name_prefix}cr", "-", "") # ACR names have restrictions
