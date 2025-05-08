@@ -6,11 +6,6 @@ resource "azurerm_resource_group" "rg" {
   tags     = local.common_tags
 }
 
-# --- ADD THIS RESOURCE ---
-resource "azurerm_resource_provider_registration" "microsoft_app" { # Changed name for clarity
-  name = "Microsoft.App"
-}
-# --- END ADD ---
 
 # Placeholder module calls - Add inputs/outputs/dependencies later
 module "keyvault" {
@@ -159,9 +154,6 @@ module "aca" {
     module.acr,       # ACA needs the image to be built and ACR to exist
     module.keyvault,  # ACA needs Key Vault for secrets
     module.aci_redis, # ACA needs Redis hostname/password secrets to be in Key Vault
-    # --- ADD THIS DEPENDENCY ---
-    azurerm_resource_provider_registration.microsoft_app
-    # --- END ADD ---
   ]
 }
 
