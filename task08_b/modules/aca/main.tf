@@ -16,12 +16,11 @@ resource "azurerm_role_assignment" "aca_acr_pull" {
 # Data block to get current client config (needed for tenant_id if not passed as var)
 data "azurerm_client_config" "current" {}
 
-# Grant the ACA's Managed Identity access to get secrets from Key Vault
+# KEEPING the Key Vault Access Policy as required by the task
 resource "azurerm_key_vault_access_policy" "aca_kv_access" {
   key_vault_id = var.key_vault_id
   tenant_id    = data.azurerm_client_config.current.tenant_id
   object_id    = azurerm_user_assigned_identity.aca_identity.principal_id
-
   secret_permissions = [
     "Get",
     "List"
@@ -29,11 +28,9 @@ resource "azurerm_key_vault_access_policy" "aca_kv_access" {
 }
 
 # Data source to get Key Vault details (needed for vault_uri)
-# This MUST be defined BEFORE the Container App that uses it
 data "azurerm_key_vault" "aca_kv" {
   name                = split("/", var.key_vault_id)[8]
   resource_group_name = var.resource_group_name
-
   depends_on = [
     azurerm_key_vault_access_policy.aca_kv_access
   ]
@@ -45,7 +42,6 @@ resource "azurerm_container_app_environment" "cae" {
   location            = var.location
   resource_group_name = var.resource_group_name
   tags                = var.tags
-
   workload_profile {
     name                  = "Consumption"
     workload_profile_type = var.workload_profile_type
@@ -75,16 +71,22 @@ resource "azurerm_container_app" "app" {
     identity_ids = [azurerm_user_assigned_identity.aca_identity.id]
   }
 
-  # Secret blocks with fixed URL format
+  # Adding registry block from the example
+  registry {
+    server   = var.acr_login_server
+    identity = azurerm_user_assigned_identity.aca_identity.id
+  }
+
+  # Adding the /latest version suffix to secret URLs
   secret {
     name                = "redis-url"
-    key_vault_secret_id = "${trimsuffix(data.azurerm_key_vault.aca_kv.vault_uri, "/")}/secrets/${var.redis_hostname_secret_name_in_kv}"
+    key_vault_secret_id = "${trimsuffix(data.azurerm_key_vault.aca_kv.vault_uri, "/")}/secrets/${var.redis_hostname_secret_name_in_kv}/latest"
     identity            = azurerm_user_assigned_identity.aca_identity.id
   }
 
   secret {
     name                = "redis-key"
-    key_vault_secret_id = "${trimsuffix(data.azurerm_key_vault.aca_kv.vault_uri, "/")}/secrets/${var.redis_password_secret_name_in_kv}"
+    key_vault_secret_id = "${trimsuffix(data.azurerm_key_vault.aca_kv.vault_uri, "/")}/secrets/${var.redis_password_secret_name_in_kv}/latest"
     identity            = azurerm_user_assigned_identity.aca_identity.id
   }
 
@@ -123,7 +125,6 @@ resource "azurerm_container_app" "app" {
   ingress {
     external_enabled = true
     target_port      = 8080
-
     traffic_weight {
       percentage      = 100
       latest_revision = true
