@@ -59,7 +59,7 @@ resource "time_sleep" "wait_for_kv_permission_propagation" {
   depends_on = [
     azurerm_key_vault_access_policy.aca_kv_access
   ]
-  create_duration = "60s"
+  create_duration = "5m"
 }
 
 # Create Azure Container App (ACA)
