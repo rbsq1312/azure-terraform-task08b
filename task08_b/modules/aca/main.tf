@@ -78,13 +78,13 @@ resource "azurerm_container_app" "app" {
   # Secret blocks with fixed URL format
   secret {
     name                = "redis-url"
-    key_vault_secret_id = "${trimright(data.azurerm_key_vault.aca_kv.vault_uri, "/")}/secrets/${var.redis_hostname_secret_name_in_kv}"
+    key_vault_secret_id = "${trimsuffix(data.azurerm_key_vault.aca_kv.vault_uri, "/")}/secrets/${var.redis_hostname_secret_name_in_kv}"
     identity            = azurerm_user_assigned_identity.aca_identity.id
   }
 
   secret {
     name                = "redis-key"
-    key_vault_secret_id = "${trimright(data.azurerm_key_vault.aca_kv.vault_uri, "/")}/secrets/${var.redis_password_secret_name_in_kv}"
+    key_vault_secret_id = "${trimsuffix(data.azurerm_key_vault.aca_kv.vault_uri, "/")}/secrets/${var.redis_password_secret_name_in_kv}"
     identity            = azurerm_user_assigned_identity.aca_identity.id
   }
 
