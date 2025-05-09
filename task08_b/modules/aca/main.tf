@@ -97,19 +97,14 @@ resource "azurerm_container_app" "app" {
 
   # CHANGE: Use direct secret values instead of Key Vault references
   secret {
-    name = "redis-url"
-    secret_reference {
-      key_vault_secret_id = data.azurerm_key_vault_secret.redis_hostname.id
-    }
+    name  = "redis-url"
+    value = data.azurerm_key_vault_secret.redis_hostname.value
   }
 
   secret {
-    name = "redis-key"
-    secret_reference {
-      key_vault_secret_id = data.azurerm_key_vault_secret.redis_password.id
-    }
+    name  = "redis-key"
+    value = data.azurerm_key_vault_secret.redis_password.value
   }
-
   template {
     container {
       name   = var.aca_name
