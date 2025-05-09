@@ -90,17 +90,15 @@ resource "azurerm_container_app" "app" {
 
   // Use singular, repeatable secret blocks
   secret {
-    name                = "redis-url"                                     // ACA-internal name for the secret
-    key_vault_secret_id = data.azurerm_key_vault_secret.redis_hostname.id // Points to KV secret "redis-hostname"
-    // key_vault_secret_id = data.azurerm_key_vault_secret.redis_hostname.versionless_id // Alternative to try
-    identity = azurerm_user_assigned_identity.aca_identity.id
+    name                = "redis-url"
+    key_vault_secret_id = data.azurerm_key_vault_secret.redis_hostname.versionless_id
+    identity            = azurerm_user_assigned_identity.aca_identity.id
   }
 
   secret {
-    name                = "redis-key"                                     // ACA-internal name for the secret
-    key_vault_secret_id = data.azurerm_key_vault_secret.redis_password.id // Points to KV secret "redis-password"
-    // key_vault_secret_id = data.azurerm_key_vault_secret.redis_password.versionless_id // Alternative to try
-    identity = azurerm_user_assigned_identity.aca_identity.id
+    name                = "redis-key"
+    key_vault_secret_id = data.azurerm_key_vault_secret.redis_password.versionless_id
+    identity            = azurerm_user_assigned_identity.aca_identity.id
   }
 
   template {
