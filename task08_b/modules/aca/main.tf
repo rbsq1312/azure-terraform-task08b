@@ -27,6 +27,7 @@ resource "azurerm_key_vault_access_policy" "aca_kv_access" {
   ]
 }
 
+# Data source to get Key Vault details
 data "azurerm_key_vault" "aca_kv" {
   name                = split("/", var.key_vault_id)[8]
   resource_group_name = var.resource_group_name
@@ -35,6 +36,7 @@ data "azurerm_key_vault" "aca_kv" {
   ]
 }
 
+# Add wait time for Key Vault permissions to propagate
 resource "time_sleep" "wait_for_kv_permission_propagation" {
   depends_on = [
     azurerm_key_vault_access_policy.aca_kv_access
@@ -42,22 +44,26 @@ resource "time_sleep" "wait_for_kv_permission_propagation" {
   create_duration = "5m"
 }
 
+# Add data sources to fetch Key Vault secrets during Terraform deployment
 data "azurerm_key_vault_secret" "redis_hostname" {
-  name         = var.redis_hostname_secret_name_in_kv # CRITICAL: Ensure this variable value is "redis-hostname"
+  name         = var.redis_hostname_secret_name_in_kv
   key_vault_id = var.key_vault_id
   depends_on = [
+    azurerm_key_vault_access_policy.aca_kv_access,
     time_sleep.wait_for_kv_permission_propagation
   ]
 }
 
 data "azurerm_key_vault_secret" "redis_password" {
-  name         = var.redis_password_secret_name_in_kv # CRITICAL: Ensure this variable value is "redis-password"
+  name         = var.redis_password_secret_name_in_kv
   key_vault_id = var.key_vault_id
   depends_on = [
+    azurerm_key_vault_access_policy.aca_kv_access,
     time_sleep.wait_for_kv_permission_propagation
   ]
 }
 
+# Create Azure Container App Environment (ACAE)
 resource "azurerm_container_app_environment" "cae" {
   name                = var.aca_env_name
   location            = var.location
@@ -71,6 +77,7 @@ resource "azurerm_container_app_environment" "cae" {
   }
 }
 
+# Create Azure Container App (ACA)
 resource "azurerm_container_app" "app" {
   name                         = var.aca_name
   container_app_environment_id = azurerm_container_app_environment.cae.id
@@ -88,17 +95,17 @@ resource "azurerm_container_app" "app" {
     identity = azurerm_user_assigned_identity.aca_identity.id
   }
 
-  // Use singular, repeatable secret blocks
+  # Using direct URL construction for Key Vault secrets as shown in the article
   secret {
     name                = "redis-url"
-    key_vault_secret_id = data.azurerm_key_vault_secret.redis_hostname.versionless_id
     identity            = azurerm_user_assigned_identity.aca_identity.id
+    key_vault_secret_id = "https://${data.azurerm_key_vault.aca_kv.name}.vault.azure.net/secrets/${var.redis_hostname_secret_name_in_kv}"
   }
 
   secret {
     name                = "redis-key"
-    key_vault_secret_id = data.azurerm_key_vault_secret.redis_password.versionless_id
     identity            = azurerm_user_assigned_identity.aca_identity.id
+    key_vault_secret_id = "https://${data.azurerm_key_vault.aca_kv.name}.vault.azure.net/secrets/${var.redis_password_secret_name_in_kv}"
   }
 
   template {
@@ -112,19 +119,23 @@ resource "azurerm_container_app" "app" {
         name  = "CREATOR"
         value = "ACA"
       }
+
       env {
         name  = "REDIS_PORT"
         value = "6379"
       }
+
       env {
         name        = "REDIS_URL"
         secret_name = "redis-url"
       }
+
       env {
         name        = "REDIS_PWD"
         secret_name = "redis-key"
       }
     }
+
     min_replicas = 0
     max_replicas = 1
   }
@@ -143,7 +154,7 @@ resource "azurerm_container_app" "app" {
     azurerm_role_assignment.aca_acr_pull,
     azurerm_key_vault_access_policy.aca_kv_access,
     data.azurerm_key_vault.aca_kv,
-    data.azurerm_key_vault_secret.redis_hostname, // Keeping these as user had them
+    data.azurerm_key_vault_secret.redis_hostname,
     data.azurerm_key_vault_secret.redis_password,
     time_sleep.wait_for_kv_permission_propagation
   ]
