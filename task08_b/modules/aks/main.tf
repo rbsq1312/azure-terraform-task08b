@@ -1,11 +1,3 @@
-# Create a User-Assigned Managed Identity for AKS Key Vault integration
-resource "azurerm_user_assigned_identity" "aks_kv_identity" {
-  name                = "${var.aks_name}-kv-identity"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  tags                = var.tags
-}
-
 resource "azurerm_kubernetes_cluster" "aks" {
   name                = var.aks_name
   location            = var.location
@@ -26,13 +18,10 @@ resource "azurerm_kubernetes_cluster" "aks" {
     type = "SystemAssigned"
   }
 
-  # Configure Key Vault Secrets Provider with User-Assigned Identity
+  # Remove the secret_identity block - let Azure manage this automatically
   key_vault_secrets_provider {
     secret_rotation_enabled  = true
     secret_rotation_interval = "5m"
-    secret_identity {
-      user_assigned_identity_id = azurerm_user_assigned_identity.aks_kv_identity.id
-    }
   }
 }
 
@@ -44,11 +33,11 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
   skip_service_principal_aad_check = true
 }
 
-# Grant the User-Assigned Identity access to Key Vault
+# Grant the auto-generated AKS identity access to Key Vault
 resource "azurerm_key_vault_access_policy" "aks_csi_kv_access" {
   key_vault_id = var.key_vault_id
   tenant_id    = var.tenant_id
-  object_id    = azurerm_user_assigned_identity.aks_kv_identity.principal_id
+  object_id    = azurerm_kubernetes_cluster.aks.key_vault_secrets_provider[0].secret_identity[0].object_id
 
   secret_permissions = [
     "Get", "List"

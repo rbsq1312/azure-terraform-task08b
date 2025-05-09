@@ -44,6 +44,25 @@ resource "time_sleep" "wait_for_kv_permission_propagation" {
   create_duration = "5m"
 }
 
+# Add data sources to fetch Key Vault secrets during Terraform deployment
+data "azurerm_key_vault_secret" "redis_hostname" {
+  name         = var.redis_hostname_secret_name_in_kv
+  key_vault_id = var.key_vault_id
+  depends_on = [
+    azurerm_key_vault_access_policy.aca_kv_access,
+    time_sleep.wait_for_kv_permission_propagation
+  ]
+}
+
+data "azurerm_key_vault_secret" "redis_password" {
+  name         = var.redis_password_secret_name_in_kv
+  key_vault_id = var.key_vault_id
+  depends_on = [
+    azurerm_key_vault_access_policy.aca_kv_access,
+    time_sleep.wait_for_kv_permission_propagation
+  ]
+}
+
 # Create Azure Container App Environment (ACAE)
 resource "azurerm_container_app_environment" "cae" {
   name                = var.aca_env_name
@@ -76,17 +95,15 @@ resource "azurerm_container_app" "app" {
     identity = azurerm_user_assigned_identity.aca_identity.id
   }
 
-  # Add secrets with references to Key Vault
+  # CHANGE: Use direct secret values instead of Key Vault references
   secret {
-    name                = "redis-url"
-    key_vault_secret_id = "${trimsuffix(data.azurerm_key_vault.aca_kv.vault_uri, "/")}/secrets/${var.redis_hostname_secret_name_in_kv}/latest"
-    identity            = azurerm_user_assigned_identity.aca_identity.id
+    name  = "redis-url"
+    value = data.azurerm_key_vault_secret.redis_hostname.value
   }
 
   secret {
-    name                = "redis-key"
-    key_vault_secret_id = "${trimsuffix(data.azurerm_key_vault.aca_kv.vault_uri, "/")}/secrets/${var.redis_password_secret_name_in_kv}/latest"
-    identity            = azurerm_user_assigned_identity.aca_identity.id
+    name  = "redis-key"
+    value = data.azurerm_key_vault_secret.redis_password.value
   }
 
   template {
@@ -106,7 +123,7 @@ resource "azurerm_container_app" "app" {
         value = "6379"
       }
 
-      # Use secret references for environment variables
+      # Use secret references for environment variables (these stay the same)
       env {
         name        = "REDIS_URL"
         secret_name = "redis-url"
@@ -136,6 +153,8 @@ resource "azurerm_container_app" "app" {
     azurerm_role_assignment.aca_acr_pull,
     azurerm_key_vault_access_policy.aca_kv_access,
     data.azurerm_key_vault.aca_kv,
+    data.azurerm_key_vault_secret.redis_hostname,
+    data.azurerm_key_vault_secret.redis_password,
     time_sleep.wait_for_kv_permission_propagation
   ]
 }
