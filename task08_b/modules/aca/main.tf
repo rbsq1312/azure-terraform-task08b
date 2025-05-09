@@ -1,83 +1,3 @@
-# Create a User-Assigned Managed Identity for the Container App
-resource "azurerm_user_assigned_identity" "aca_identity" {
-  name                = "${var.aca_name}-identity"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  tags                = var.tags
-}
-
-# Grant the ACA's Managed Identity access to pull from ACR
-resource "azurerm_role_assignment" "aca_acr_pull" {
-  scope                = var.acr_id
-  role_definition_name = "AcrPull"
-  principal_id         = azurerm_user_assigned_identity.aca_identity.principal_id
-}
-
-# Data block to get current client config
-data "azurerm_client_config" "current" {}
-
-# Grant the ACA's Managed Identity access to get secrets from Key Vault
-resource "azurerm_key_vault_access_policy" "aca_kv_access" {
-  key_vault_id = var.key_vault_id
-  tenant_id    = data.azurerm_client_config.current.tenant_id
-  object_id    = azurerm_user_assigned_identity.aca_identity.principal_id
-  secret_permissions = [
-    "Get",
-    "List"
-  ]
-}
-
-# Data source to get Key Vault details
-data "azurerm_key_vault" "aca_kv" {
-  name                = split("/", var.key_vault_id)[8]
-  resource_group_name = var.resource_group_name
-  depends_on = [
-    azurerm_key_vault_access_policy.aca_kv_access
-  ]
-}
-
-# Add wait time for Key Vault permissions to propagate
-resource "time_sleep" "wait_for_kv_permission_propagation" {
-  depends_on = [
-    azurerm_key_vault_access_policy.aca_kv_access
-  ]
-  create_duration = "5m"
-}
-
-# Add data sources to fetch Key Vault secrets during Terraform deployment
-data "azurerm_key_vault_secret" "redis_hostname" {
-  name         = var.redis_hostname_secret_name_in_kv
-  key_vault_id = var.key_vault_id
-  depends_on = [
-    azurerm_key_vault_access_policy.aca_kv_access,
-    time_sleep.wait_for_kv_permission_propagation
-  ]
-}
-
-data "azurerm_key_vault_secret" "redis_password" {
-  name         = var.redis_password_secret_name_in_kv
-  key_vault_id = var.key_vault_id
-  depends_on = [
-    azurerm_key_vault_access_policy.aca_kv_access,
-    time_sleep.wait_for_kv_permission_propagation
-  ]
-}
-
-# Create Azure Container App Environment (ACAE)
-resource "azurerm_container_app_environment" "cae" {
-  name                = var.aca_env_name
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  tags                = var.tags
-  workload_profile {
-    name                  = "Consumption"
-    workload_profile_type = var.workload_profile_type
-    minimum_count         = 0
-    maximum_count         = 1
-  }
-}
-
-# Create Azure Container App (ACA)
 resource "azurerm_container_app" "app" {
   name                         = var.aca_name
   container_app_environment_id = azurerm_container_app_environment.cae.id
@@ -95,16 +15,19 @@ resource "azurerm_container_app" "app" {
     identity = azurerm_user_assigned_identity.aca_identity.id
   }
 
-  # CHANGE: Use direct secret values instead of Key Vault references
+  #  Use Key Vault reference instead of fetching value
   secret {
-    name  = "redis-url"
-    value = data.azurerm_key_vault_secret.redis_hostname.value
+    name          = "redis-url"
+    key_vault_url = data.azurerm_key_vault_secret.redis_hostname.id
+    identity      = azurerm_user_assigned_identity.aca_identity.id
   }
 
   secret {
-    name  = "redis-key"
-    value = data.azurerm_key_vault_secret.redis_password.value
+    name          = "redis-key"
+    key_vault_url = data.azurerm_key_vault_secret.redis_password.id
+    identity      = azurerm_user_assigned_identity.aca_identity.id
   }
+
   template {
     container {
       name   = var.aca_name
@@ -122,7 +45,7 @@ resource "azurerm_container_app" "app" {
         value = "6379"
       }
 
-      # Use secret references for environment variables (these stay the same)
+      # Secure environment variable mapping
       env {
         name        = "REDIS_URL"
         secret_name = "redis-url"
@@ -157,3 +80,4 @@ resource "azurerm_container_app" "app" {
     time_sleep.wait_for_kv_permission_propagation
   ]
 }
+
