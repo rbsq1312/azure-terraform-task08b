@@ -107,7 +107,6 @@ resource "azurerm_container_app" "app" {
     key_vault_url = data.azurerm_key_vault_secret.redis_password.id
     identity      = azurerm_user_assigned_identity.aca_identity.id
   }
-
   template {
     container {
       name   = var.aca_name
