@@ -98,13 +98,13 @@ resource "azurerm_container_app" "app" {
   # Use Key Vault reference instead of fetching value
   secret {
     name                = "redis-url"
-    key_vault_secret_id = "https://${split("/", var.key_vault_id)[8]}.vault.azure.net/secrets/redis-hostname"
+    key_vault_secret_id = data.azurerm_key_vault_secret.redis_hostname.id
     identity            = azurerm_user_assigned_identity.aca_identity.id
   }
 
   secret {
     name                = "redis-key"
-    key_vault_secret_id = "https://${split("/", var.key_vault_id)[8]}.vault.azure.net/secrets/redis-password"
+    key_vault_secret_id = data.azurerm_key_vault_secret.redis_password.id
     identity            = azurerm_user_assigned_identity.aca_identity.id
   }
   template {
