@@ -36,10 +36,10 @@ resource "time_sleep" "wait_for_kv_permission_propagation" {
 
 # Create Container App Environment
 resource "azurerm_container_app_environment" "env" {
-  name                       = var.environment_name
-  resource_group_name        = var.resource_group_name
-  location                   = var.location
-  tags                      = var.tags
+  name                = var.environment_name
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  tags               = var.tags
 }
 
 # Create Container App
@@ -60,17 +60,17 @@ resource "azurerm_container_app" "app" {
   }
 
   registry {
-    server               = var.registry_server
-    identity             = azurerm_user_assigned_identity.aca_identity.id
+    server   = var.registry_server
+    identity = azurerm_user_assigned_identity.aca_identity.id
   }
 
   secret {
-    name = "redis-url"
+    name  = "redis-url"
     value = "@Microsoft.KeyVault(SecretUri=${var.redis_hostname_secret_uri})"
   }
 
   secret {
-    name = "redis-key"
+    name  = "redis-key"
     value = "@Microsoft.KeyVault(SecretUri=${var.redis_password_secret_uri})"
   }
 
@@ -104,9 +104,11 @@ resource "azurerm_container_app" "app" {
   }
 
   ingress {
-    external_enabled = true
-    target_port     = 8080
-    transport       = "auto"
+    allow_insecure_connections = false
+    external_enabled          = true
+    target_port              = 8080
+    transport               = "auto"
+
     traffic_weight {
       percentage      = 100
       latest_revision = true

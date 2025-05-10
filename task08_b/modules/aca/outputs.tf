@@ -9,7 +9,7 @@ output "identity_id" {
   description = "The ID of the Container App's managed identity"
 }
 
-output "fqdn" {
+output "aca_fqdn" {
   value       = azurerm_container_app.app.latest_revision_fqdn
   description = "The FQDN of the Container App"
 }
