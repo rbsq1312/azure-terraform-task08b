@@ -1,89 +1,58 @@
-# Create a User-Assigned Managed Identity for the Container App
+
+# Create User-Assigned Identity for Container App
 resource "azurerm_user_assigned_identity" "aca_identity" {
-  name                = "${var.aca_name}-identity"
+  name                = "${var.name}-identity"
   resource_group_name = var.resource_group_name
   location            = var.location
-  tags                = var.tags
 }
 
-# Grant the ACA's Managed Identity access to pull from ACR
-resource "azurerm_role_assignment" "aca_acr_pull" {
-  scope                = var.acr_id
-  role_definition_name = "AcrPull"
-  principal_id         = azurerm_user_assigned_identity.aca_identity.principal_id
-}
-
-# Data block to get current client config
-data "azurerm_client_config" "current" {}
-
-# Grant the ACA's Managed Identity access to get secrets from Key Vault
+# Grant Key Vault access policy to the identity
 resource "azurerm_key_vault_access_policy" "aca_kv_access" {
   key_vault_id = var.key_vault_id
-  tenant_id    = data.azurerm_client_config.current.tenant_id
+  tenant_id    = var.tenant_id
   object_id    = azurerm_user_assigned_identity.aca_identity.principal_id
+
   secret_permissions = [
     "Get",
     "List"
   ]
 }
 
-# Data source to get Key Vault details
-data "azurerm_key_vault" "aca_kv" {
-  name                = split("/", var.key_vault_id)[8]
-  resource_group_name = var.resource_group_name
-  depends_on = [
-    azurerm_key_vault_access_policy.aca_kv_access
-  ]
+# Grant Key Vault Secrets User role to the identity
+resource "azurerm_role_assignment" "aca_kv_role" {
+  scope                = var.key_vault_id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.aca_identity.principal_id
 }
 
-# Add wait time for Key Vault permissions to propagate
+# Wait for role and policy propagation
 resource "time_sleep" "wait_for_kv_permission_propagation" {
   depends_on = [
-    azurerm_key_vault_access_policy.aca_kv_access
-  ]
-  create_duration = "5m"
-}
-
-# Add data sources to fetch Key Vault secrets during Terraform deployment
-data "azurerm_key_vault_secret" "redis_hostname" {
-  name         = var.redis_hostname_secret_name_in_kv
-  key_vault_id = var.key_vault_id
-  depends_on = [
     azurerm_key_vault_access_policy.aca_kv_access,
-    time_sleep.wait_for_kv_permission_propagation
+    azurerm_role_assignment.aca_kv_role
   ]
+  create_duration = "30s"
 }
 
-data "azurerm_key_vault_secret" "redis_password" {
-  name         = var.redis_password_secret_name_in_kv
-  key_vault_id = var.key_vault_id
-  depends_on = [
-    azurerm_key_vault_access_policy.aca_kv_access,
-    time_sleep.wait_for_kv_permission_propagation
-  ]
+# Create Container App Environment
+resource "azurerm_container_app_environment" "env" {
+  name                       = var.environment_name
+  resource_group_name        = var.resource_group_name
+  location                   = var.location
+  tags                      = var.tags
 }
 
-# Create Azure Container App Environment (ACAE)
-resource "azurerm_container_app_environment" "cae" {
-  name                = var.aca_env_name
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  tags                = var.tags
-  workload_profile {
-    name                  = "Consumption"
-    workload_profile_type = var.workload_profile_type
-    minimum_count         = 0
-    maximum_count         = 1
-  }
-}
-
-# Create Azure Container App (ACA)
+# Create Container App
 resource "azurerm_container_app" "app" {
-  name                         = var.aca_name
-  container_app_environment_id = azurerm_container_app_environment.cae.id
-  resource_group_name          = var.resource_group_name
-  revision_mode                = "Single"
-  tags                         = var.tags
+  depends_on = [
+    time_sleep.wait_for_kv_permission_propagation
+  ]
+
+  name                         = var.name
+  resource_group_name         = var.resource_group_name
+  container_app_environment_id = azurerm_container_app_environment.env.id
+  revision_mode               = "Single"
+  tags                        = var.tags
 
   identity {
     type         = "UserAssigned"
@@ -91,29 +60,26 @@ resource "azurerm_container_app" "app" {
   }
 
   registry {
-    server   = var.acr_login_server
-    identity = azurerm_user_assigned_identity.aca_identity.id
-  }
-
-  # Using direct URL construction for Key Vault secrets as shown in the article
-  secret {
-    name                = "redis-url"
-    identity            = azurerm_user_assigned_identity.aca_identity.id
-    key_vault_secret_id = "https://${data.azurerm_key_vault.aca_kv.name}.vault.azure.net/secrets/${var.redis_hostname_secret_name_in_kv}"
+    server               = var.registry_server
+    identity             = azurerm_user_assigned_identity.aca_identity.id
   }
 
   secret {
-    name                = "redis-key"
-    identity            = azurerm_user_assigned_identity.aca_identity.id
-    key_vault_secret_id = "https://${data.azurerm_key_vault.aca_kv.name}.vault.azure.net/secrets/${var.redis_password_secret_name_in_kv}"
+    name = "redis-url"
+    value = "@Microsoft.KeyVault(SecretUri=${var.redis_hostname_secret_uri})"
+  }
+
+  secret {
+    name = "redis-key"
+    value = "@Microsoft.KeyVault(SecretUri=${var.redis_password_secret_uri})"
   }
 
   template {
     container {
-      name   = var.aca_name
-      image  = var.docker_image_to_deploy
-      cpu    = 0.25
-      memory = "0.5Gi"
+      name   = "app"
+      image  = "${var.registry_server}/${var.image_name}:${var.image_tag}"
+      cpu    = 0.5
+      memory = "1Gi"
 
       env {
         name  = "CREATOR"
@@ -135,27 +101,15 @@ resource "azurerm_container_app" "app" {
         secret_name = "redis-key"
       }
     }
-
-    min_replicas = 0
-    max_replicas = 1
   }
 
   ingress {
     external_enabled = true
-    target_port      = 8080
+    target_port     = 8080
+    transport       = "auto"
     traffic_weight {
       percentage      = 100
       latest_revision = true
     }
   }
-
-  depends_on = [
-    azurerm_user_assigned_identity.aca_identity,
-    azurerm_role_assignment.aca_acr_pull,
-    azurerm_key_vault_access_policy.aca_kv_access,
-    data.azurerm_key_vault.aca_kv,
-    data.azurerm_key_vault_secret.redis_hostname,
-    data.azurerm_key_vault_secret.redis_password,
-    time_sleep.wait_for_kv_permission_propagation
-  ]
 }
