@@ -47,6 +47,12 @@ resource "azurerm_container_group" "redis_ci" {
   # }
 }
 
+# Wait for Redis to initialize
+resource "time_sleep" "wait_for_redis" {
+  depends_on      = [azurerm_container_group.redis_ci]
+  create_duration = "30s"
+}
+
 # Store the Redis ACI FQDN (hostname) in Key Vault
 resource "azurerm_key_vault_secret" "redis_hostname" {
   name         = var.redis_hostname_secret_name
@@ -54,7 +60,7 @@ resource "azurerm_key_vault_secret" "redis_hostname" {
   key_vault_id = var.key_vault_id
 
   tags       = var.tags
-  depends_on = [azurerm_container_group.redis_ci] # Ensure ACI is created first
+  depends_on = [time_sleep.wait_for_redis] # Ensure Redis is initialized
 }
 
 # Store the generated Redis password in Key Vault
@@ -63,7 +69,6 @@ resource "azurerm_key_vault_secret" "redis_password" {
   value        = random_password.redis_password.result
   key_vault_id = var.key_vault_id
 
-  tags = var.tags
-  # depends_on implicitly on random_password, explicitly on ACI to group secret creation
-  depends_on = [azurerm_container_group.redis_ci]
+  tags       = var.tags
+  depends_on = [time_sleep.wait_for_redis] # Ensure Redis is initialized
 }

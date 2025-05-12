@@ -47,8 +47,13 @@ resource "azurerm_container_app_environment" "cae" {
   resource_group_name = var.resource_group_name
   location            = var.location
   tags                = var.tags
-}
 
+  # Add this workload profile block
+  workload_profile {
+    name                  = "Consumption"
+    workload_profile_type = "Consumption"
+  }
+}
 # Create Container App
 resource "azurerm_container_app" "app" {
   depends_on = [
