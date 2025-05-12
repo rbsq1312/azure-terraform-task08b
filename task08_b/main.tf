@@ -138,19 +138,16 @@ module "aca" {
   location            = azurerm_resource_group.rg.location
   tags                = local.common_tags
 
-  # FIX: Correct variable names to match module expectations
   name             = local.aca_name
   environment_name = local.aca_env_name
 
-  # FIX: Map to the correct registry and image variables
   registry_server = module.acr.acr_login_server
   image_name      = local.docker_image_name
   image_tag       = local.docker_image_tag
 
-  # FIX: Add missing tenant_id parameter
   tenant_id = data.azurerm_client_config.current.tenant_id
+  acr_id    = module.acr.acr_id # Added this line
 
-  # FIX: Form the complete secret URIs
   key_vault_id              = module.keyvault.key_vault_id
   redis_hostname_secret_uri = "${module.keyvault.key_vault_uri}secrets/${local.redis_hostname_secret_name}"
   redis_password_secret_uri = "${module.keyvault.key_vault_uri}secrets/${local.redis_password_secret_name}"

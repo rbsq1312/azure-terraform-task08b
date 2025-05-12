@@ -1,4 +1,3 @@
-
 # Create User-Assigned Identity for Container App
 resource "azurerm_user_assigned_identity" "aca_identity" {
   name                = "${var.name}-identity"
@@ -25,11 +24,19 @@ resource "azurerm_role_assignment" "aca_kv_role" {
   principal_id         = azurerm_user_assigned_identity.aca_identity.principal_id
 }
 
+# Grant ACR pull permission to the ACA identity
+resource "azurerm_role_assignment" "aca_acr_pull" {
+  scope                = var.acr_id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_user_assigned_identity.aca_identity.principal_id
+}
+
 # Wait for role and policy propagation
 resource "time_sleep" "wait_for_kv_permission_propagation" {
   depends_on = [
     azurerm_key_vault_access_policy.aca_kv_access,
-    azurerm_role_assignment.aca_kv_role
+    azurerm_role_assignment.aca_kv_role,
+    azurerm_role_assignment.aca_acr_pull
   ]
   create_duration = "30s"
 }

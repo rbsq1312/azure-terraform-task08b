@@ -59,3 +59,8 @@ variable "redis_password_secret_uri" {
   type        = string
   description = "The URI of the Redis password secret in Key Vault"
 }
+
+variable "acr_id" {
+  type        = string
+  description = "The ID of the Azure Container Registry"
+}
