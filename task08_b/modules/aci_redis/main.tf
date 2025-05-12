@@ -50,7 +50,7 @@ resource "azurerm_container_group" "redis_ci" {
 # Wait for Redis to initialize
 resource "time_sleep" "wait_for_redis" {
   depends_on      = [azurerm_container_group.redis_ci]
-  create_duration = "30s"
+  create_duration = "3m"
 }
 
 # Store the Redis ACI IP address (hostname) in Key Vault
