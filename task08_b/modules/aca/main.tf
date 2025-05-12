@@ -76,7 +76,7 @@ resource "azurerm_container_app" "app" {
 
   template {
     container {
-      name   = "var.name"
+      name   = var.name
       image  = "${var.registry_server}/${var.image_name}:${var.image_tag}"
       cpu    = 0.5
       memory = "1Gi"

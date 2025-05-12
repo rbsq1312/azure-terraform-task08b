@@ -138,8 +138,8 @@ module "aca" {
   location            = azurerm_resource_group.rg.location
   tags                = local.common_tags
 
-  aca_env_name          = name                          # From root locals.tf
-  aca_name              = environment_name              # From root locals.tf
+  aca_env_name          = environment_name              # From root locals.tf
+  aca_name              = name                          # From root locals.tf
   workload_profile_type = var.aca_workload_profile_type # From root variables.tf
 
   docker_image_to_deploy = module.acr.docker_image_full_name_latest # Output from acr module
