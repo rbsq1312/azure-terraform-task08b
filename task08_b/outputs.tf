@@ -12,7 +12,3 @@ output "aks_lb_ip" {
   value       = module.k8s.service_load_balancer_ingress_ip # Get from k8s module output
 }
 
-output "key_vault_uri" {
-  description = "The URI of the Key Vault"
-  value       = azurerm_key_vault.kv.vault_uri
-}
