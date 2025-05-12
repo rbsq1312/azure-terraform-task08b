@@ -132,28 +132,33 @@ module "aks" {
 }
 
 module "aca" {
-  source = "./modules/aca" # Path to your aca module
+  source = "./modules/aca"
 
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   tags                = local.common_tags
 
-  aca_env_name          = environment_name              # From root locals.tf
-  aca_name              = name                          # From root locals.tf
-  workload_profile_type = var.aca_workload_profile_type # From root variables.tf
+  # FIX: Correct variable names to match module expectations
+  name             = local.aca_name
+  environment_name = local.aca_env_name
 
-  docker_image_to_deploy = module.acr.docker_image_full_name_latest # Output from acr module
-  acr_id                 = module.acr.acr_id                        # Output from acr module
-  acr_login_server       = module.acr.acr_login_server              # Not explicitly needed by module if using managed identity for pull
+  # FIX: Map to the correct registry and image variables
+  registry_server = module.acr.acr_login_server
+  image_name      = local.docker_image_name
+  image_tag       = local.docker_image_tag
 
-  key_vault_id                     = module.keyvault.key_vault_id     # Output from keyvault module
-  redis_hostname_secret_name_in_kv = local.redis_hostname_secret_name # From root locals.tf
-  redis_password_secret_name_in_kv = local.redis_password_secret_name # From root locals.tf
+  # FIX: Add missing tenant_id parameter
+  tenant_id = data.azurerm_client_config.current.tenant_id
+
+  # FIX: Form the complete secret URIs
+  key_vault_id              = module.keyvault.key_vault_id
+  redis_hostname_secret_uri = "${module.keyvault.key_vault_uri}secrets/${local.redis_hostname_secret_name}"
+  redis_password_secret_uri = "${module.keyvault.key_vault_uri}secrets/${local.redis_password_secret_name}"
 
   depends_on = [
-    module.acr,       # ACA needs the image to be built and ACR to exist
-    module.keyvault,  # ACA needs Key Vault for secrets
-    module.aci_redis, # ACA needs Redis hostname/password secrets to be in Key Vault
+    module.acr,
+    module.keyvault,
+    module.aci_redis,
   ]
 }
 
@@ -166,21 +171,17 @@ module "k8s" {
   }
 
   acr_login_server                 = module.acr.acr_login_server
-  app_image_name                   = local.docker_image_name # From root locals.tf
-  image_tag                        = local.docker_image_tag  # From root locals.tf
+  app_image_name                   = local.docker_image_name
+  image_tag                        = local.docker_image_tag
   key_vault_name                   = module.keyvault.key_vault_name
-  redis_hostname_secret_name_in_kv = local.redis_hostname_secret_name # From root locals.tf
-  redis_password_secret_name_in_kv = local.redis_password_secret_name # From root locals.tf
+  redis_hostname_secret_name_in_kv = local.redis_hostname_secret_name
+  redis_password_secret_name_in_kv = local.redis_password_secret_name
   tenant_id                        = data.azurerm_client_config.current.tenant_id
-  aks_kv_identity_client_id        = module.aks.aks_kv_identity_client_id # Output from AKS module
+  aks_kv_identity_client_id        = module.aks.aks_kv_identity_client_id
 
   depends_on = [
-    module.aks,       # K8s resources depend on AKS cluster being ready
-    module.aci_redis, # For Redis secrets being available in KV
-    module.acr        # For the image being available
+    module.aks,
+    module.aci_redis,
+    module.acr
   ]
 }
-# Add time_sleep and data source for K8s service IP if needed for output
-# resource "time_sleep" "wait_for_lb_ip" { ... }
-# data "kubernetes_service" "app" { ... depends_on = [time_sleep.wait_for_lb_ip] }
-

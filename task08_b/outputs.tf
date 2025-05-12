@@ -5,10 +5,14 @@ output "redis_fqdn" {
 
 output "aca_fqdn" {
   description = "FQDN of App in Azure Container App"
-  value       = module.aca.fqdn
+  value       = module.aca.aca_fqdn
 }
-
 output "aks_lb_ip" {
   description = "Load Balancer IP address of APP in AKS"
   value       = module.k8s.service_load_balancer_ingress_ip # Get from k8s module output
+}
+
+output "key_vault_uri" {
+  description = "The URI of the Key Vault"
+  value       = azurerm_key_vault.kv.vault_uri
 }
