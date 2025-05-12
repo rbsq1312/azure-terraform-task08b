@@ -5,7 +5,7 @@ output "redis_fqdn" {
 
 output "aca_fqdn" {
   description = "FQDN of App in Azure Container App"
-  value       = module.aca.aca_fqdn
+  value       = module.aca.fqdn
 }
 
 output "aks_lb_ip" {

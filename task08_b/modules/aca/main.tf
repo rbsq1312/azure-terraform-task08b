@@ -35,11 +35,11 @@ resource "time_sleep" "wait_for_kv_permission_propagation" {
 }
 
 # Create Container App Environment
-resource "azurerm_container_app_environment" "env" {
-  name                       = var.environment_name
-  resource_group_name        = var.resource_group_name
-  location                   = var.location
-  tags                      = var.tags
+resource "azurerm_container_app_environment" "cae" {
+  name                = var.environment_name
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  tags                = var.tags
 }
 
 # Create Container App
@@ -49,10 +49,10 @@ resource "azurerm_container_app" "app" {
   ]
 
   name                         = var.name
-  resource_group_name         = var.resource_group_name
-  container_app_environment_id = azurerm_container_app_environment.env.id
-  revision_mode               = "Single"
-  tags                        = var.tags
+  resource_group_name          = var.resource_group_name
+  container_app_environment_id = azurerm_container_app_environment.cae.id
+  revision_mode                = "Single"
+  tags                         = var.tags
 
   identity {
     type         = "UserAssigned"
@@ -60,23 +60,23 @@ resource "azurerm_container_app" "app" {
   }
 
   registry {
-    server               = var.registry_server
-    identity             = azurerm_user_assigned_identity.aca_identity.id
+    server   = var.registry_server
+    identity = azurerm_user_assigned_identity.aca_identity.id
   }
 
   secret {
-    name = "redis-url"
+    name  = "redis-url"
     value = "@Microsoft.KeyVault(SecretUri=${var.redis_hostname_secret_uri})"
   }
 
   secret {
-    name = "redis-key"
+    name  = "redis-key"
     value = "@Microsoft.KeyVault(SecretUri=${var.redis_password_secret_uri})"
   }
 
   template {
     container {
-      name   = "app"
+      name   = "var.name"
       image  = "${var.registry_server}/${var.image_name}:${var.image_tag}"
       cpu    = 0.5
       memory = "1Gi"
@@ -105,8 +105,8 @@ resource "azurerm_container_app" "app" {
 
   ingress {
     external_enabled = true
-    target_port     = 8080
-    transport       = "auto"
+    target_port      = 8080
+    transport        = "auto"
     traffic_weight {
       percentage      = 100
       latest_revision = true
