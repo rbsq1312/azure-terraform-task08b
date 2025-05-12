@@ -53,10 +53,10 @@ resource "time_sleep" "wait_for_redis" {
   create_duration = "30s"
 }
 
-# Store the Redis ACI FQDN (hostname) in Key Vault
+# Store the Redis ACI IP address (hostname) in Key Vault
 resource "azurerm_key_vault_secret" "redis_hostname" {
   name         = var.redis_hostname_secret_name
-  value        = azurerm_container_group.redis_ci.fqdn # Use FQDN if public, IP if private/VNet
+  value        = azurerm_container_group.redis_ci.ip_address // CHANGED: was azurerm_container_group.redis_ci.fqdn
   key_vault_id = var.key_vault_id
 
   tags       = var.tags

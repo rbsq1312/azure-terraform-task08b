@@ -1,6 +1,6 @@
 output "redis_fqdn" {
   description = "FQDN of Redis in Azure Container Instance"
-  value       = module.aci_redis.redis_fqdn
+  value       = module.aci_redis.redis_ip_address // CHANGED: was module.aci_redis.redis_fqdn
 }
 
 output "aca_fqdn" {
