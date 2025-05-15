@@ -38,7 +38,7 @@ resource "time_sleep" "wait_for_kv_permission_propagation" {
     azurerm_role_assignment.aca_kv_role,
     azurerm_role_assignment.aca_acr_pull
   ]
-  create_duration = "30s"
+  create_duration = "3m"
 }
 
 # Create Container App Environment

@@ -30,8 +30,8 @@ module "aci_redis" {
   aci_redis_name = local.aci_redis_name # From root locals.tf
   aci_sku        = var.aci_sku          # From root variables.tf
 
-  key_vault_id               = module.keyvault.key_vault_id     # Output from keyvault module
-  redis_hostname_secret_name = local.redis_hostname_secret_name # From root locals.tf
+  key_vault_id               = module.keyvault.key_vault_id # Output from keyvault module
+  redis_hostname_secret_uri  = "${module.keyvault.key_vault_uri}secrets/${local.redis_hostname_secret_name}"
   redis_password_secret_name = local.redis_password_secret_name # From root locals.tf
 
   depends_on = [
@@ -131,6 +131,11 @@ module "aks" {
   ]
 }
 
+resource "time_sleep" "wait_for_redis_aca_propagation" {
+  depends_on      = [module.aci_redis]
+  create_duration = "3m"
+}
+
 module "aca" {
   source = "./modules/aca"
 
@@ -156,6 +161,7 @@ module "aca" {
     module.acr,
     module.keyvault,
     module.aci_redis,
+    time_sleep.wait_for_redis_aca_propagation
   ]
 }
 # Add this new resource before the k8s module

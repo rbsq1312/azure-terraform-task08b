@@ -56,7 +56,7 @@ resource "time_sleep" "wait_for_redis" {
 # Store the Redis ACI FQDN in Key Vault
 resource "azurerm_key_vault_secret" "redis_hostname" {
   name         = var.redis_hostname_secret_name
-  value        = azurerm_container_group.redis_ci.fqdn
+  value        = "${azurerm_container_group.redis_ci.fqdn}:6379"
   key_vault_id = var.key_vault_id
 
   tags       = var.tags
