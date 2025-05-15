@@ -37,35 +37,3 @@ resource "azurerm_key_vault_access_policy" "current_user_policy" {
   # certificate_permissions = [ ... ]
 }
 
-# Store reference to Key Vault ID as a secret
-resource "azurerm_key_vault_secret" "key_vault_id_secret" {
-  name         = "key-vault-id"
-  value        = azurerm_key_vault.kv.id
-  key_vault_id = azurerm_key_vault.kv.id
-
-  depends_on = [
-    azurerm_key_vault_access_policy.current_user_policy
-  ]
-}
-
-# Store reference to Key Vault name as a secret
-resource "azurerm_key_vault_secret" "key_vault_name_secret" {
-  name         = "key-vault-name"
-  value        = azurerm_key_vault.kv.name
-  key_vault_id = azurerm_key_vault.kv.id
-
-  depends_on = [
-    azurerm_key_vault_access_policy.current_user_policy
-  ]
-}
-
-# Store reference to Key Vault URI as a secret
-resource "azurerm_key_vault_secret" "key_vault_uri_secret" {
-  name         = "key-vault-uri"
-  value        = azurerm_key_vault.kv.vault_uri
-  key_vault_id = azurerm_key_vault.kv.id
-
-  depends_on = [
-    azurerm_key_vault_access_policy.current_user_policy
-  ]
-}
