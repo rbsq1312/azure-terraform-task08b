@@ -24,18 +24,18 @@ module "aci_redis" {
   source = "./modules/aci_redis"
 
   resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
+  location            = var.location
   tags                = local.common_tags
 
-  aci_redis_name = local.aci_redis_name # From root locals.tf
-  aci_sku        = var.aci_sku          # From root variables.tf
+  aci_redis_name = local.aci_redis_name
+  aci_sku        = var.aci_sku
 
-  key_vault_id               = module.keyvault.key_vault_id # Output from keyvault module
-  redis_hostname_secret_uri  = "${module.keyvault.key_vault_uri}secrets/${local.redis_hostname_secret_name}"
-  redis_password_secret_name = local.redis_password_secret_name # From root locals.tf
+  key_vault_id               = module.keyvault.key_vault_id
+  redis_hostname_secret_name = local.redis_hostname_secret_name
+  redis_password_secret_name = local.redis_password_secret_name
 
   depends_on = [
-    module.keyvault # Ensure Key Vault is created before trying to store secrets in it
+    module.keyvault
   ]
 }
 

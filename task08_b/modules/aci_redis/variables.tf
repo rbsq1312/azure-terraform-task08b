@@ -39,10 +39,3 @@ variable "redis_password_secret_name" {
   description = "The name of the Key Vault secret to store the Redis password."
   type        = string
 }
-
-# Optional: If you need to deploy ACI into a VNet for private access
-# variable "subnet_ids" {
-#   description = "A list of subnet IDs to deploy the ACI into."
-#   type        = list(string)
-#   default     = null
-# }
