@@ -17,7 +17,7 @@ resource "azurerm_container_group" "redis_ci" {
   os_type             = "Linux"
   sku                 = var.aci_sku
   tags                = var.tags
-  dns_name_label = "${var.aci_redis_name}-dns"
+  dns_name_label      = "${var.aci_redis_name}-dns"
   container {
     name = "redis"
     # Using official Redis image from Microsoft Artifact Registry (MCR)
