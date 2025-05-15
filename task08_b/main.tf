@@ -158,6 +158,13 @@ module "aca" {
     module.aci_redis,
   ]
 }
+# Add this new resource before the k8s module
+resource "time_sleep" "wait_for_redis_propagation" {
+  depends_on      = [module.aci_redis]
+  create_duration = "2m"
+  # This gives additional time for the Redis secrets to propagate 
+  # before Kubernetes tries to access them
+}
 
 module "k8s" {
   source = "./modules/k8s"
@@ -179,6 +186,7 @@ module "k8s" {
   depends_on = [
     module.aks,
     module.aci_redis,
-    module.acr
+    module.acr,
+    time_sleep.wait_for_redis_propagation # Added dependency on the new time_sleep
   ]
 }

@@ -47,16 +47,16 @@ resource "azurerm_container_group" "redis_ci" {
   # }
 }
 
-# Wait for Redis to initialize
+# Wait for Redis to initialize - INCREASED WAIT TIME
 resource "time_sleep" "wait_for_redis" {
   depends_on      = [azurerm_container_group.redis_ci]
-  create_duration = "2m"
+  create_duration = "3m" # Increased from 2m to 3m for better initialization
 }
 
 # Store the Redis ACI FQDN in Key Vault
 resource "azurerm_key_vault_secret" "redis_hostname" {
   name         = var.redis_hostname_secret_name
-  value        = azurerm_container_group.redis_ci.fqdn # CHANGED: Change back to FQDN
+  value        = azurerm_container_group.redis_ci.fqdn
   key_vault_id = var.key_vault_id
 
   tags       = var.tags

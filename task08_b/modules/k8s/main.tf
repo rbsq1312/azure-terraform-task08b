@@ -1,5 +1,3 @@
-# In modules/k8s/main.tf
-
 resource "kubectl_manifest" "secret_provider_class" {
   # Provider alias will be passed from the root module if needed
   # provider = kubectl.k8s_config 
@@ -35,7 +33,8 @@ resource "kubectl_manifest" "deployment" {
   wait_for_rollout = false
 
   depends_on = [
-    kubectl_manifest.service
+    kubectl_manifest.service,
+    kubectl_manifest.secret_provider_class # Added explicit dependency on secret provider
   ]
 }
 

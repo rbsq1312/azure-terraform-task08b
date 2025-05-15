@@ -33,13 +33,13 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
   skip_service_principal_aad_check = true
 }
 
-# Grant the auto-generated AKS identity access to Key Vault
+# Grant the auto-generated AKS identity access to Key Vault - ENHANCED PERMISSIONS
 resource "azurerm_key_vault_access_policy" "aks_csi_kv_access" {
   key_vault_id = var.key_vault_id
   tenant_id    = var.tenant_id
   object_id    = azurerm_kubernetes_cluster.aks.key_vault_secrets_provider[0].secret_identity[0].object_id
 
   secret_permissions = [
-    "Get", "List"
+    "Get", "List", "Set" # Added "Set" permission
   ]
 }
