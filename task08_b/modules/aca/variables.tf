@@ -50,14 +50,14 @@ variable "tenant_id" {
   description = "The Azure AD tenant ID"
 }
 
-variable "redis_hostname_secret_uri" {
+variable "redis_hostname_secret_name" {
   type        = string
-  description = "The URI of the Redis hostname secret in Key Vault"
+  description = "The Name of the Redis hostname secret in Key Vault"
 }
 
-variable "redis_password_secret_uri" {
+variable "redis_password_secret_name" {
   type        = string
-  description = "The URI of the Redis password secret in Key Vault"
+  description = "The Name of the Redis password secret in Key Vault"
 }
 
 variable "acr_id" {

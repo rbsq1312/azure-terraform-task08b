@@ -148,9 +148,9 @@ module "aca" {
   tenant_id = data.azurerm_client_config.current.tenant_id
   acr_id    = module.acr.acr_id # Added this line
 
-  key_vault_id              = module.keyvault.key_vault_id
-  redis_hostname_secret_uri = "${module.keyvault.key_vault_uri}secrets/${local.redis_hostname_secret_name}"
-  redis_password_secret_uri = "${module.keyvault.key_vault_uri}secrets/${local.redis_password_secret_name}"
+  key_vault_id               = module.keyvault.key_vault_id
+  redis_hostname_secret_name = local.redis_hostname_secret_name
+  redis_password_secret_name = local.redis_password_secret_name
 
   depends_on = [
     module.acr,
@@ -158,6 +158,7 @@ module "aca" {
     module.aci_redis,
   ]
 }
+
 
 module "k8s" {
   source = "./modules/k8s"

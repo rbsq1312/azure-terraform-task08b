@@ -54,6 +54,15 @@ resource "azurerm_container_app_environment" "cae" {
     workload_profile_type = "Consumption"
   }
 }
+data "azurerm_key_vault_secret" "redis_uri" {
+  name         = var.redis_hostname_secret_name
+  key_vault_id = var.key_vault_id
+}
+
+data "azurerm_key_vault_secret" "redis_key" {
+  name         = var.redis_password_secret_name
+  key_vault_id = var.key_vault_id
+}
 # Create Container App
 resource "azurerm_container_app" "app" {
   depends_on = [
@@ -78,14 +87,13 @@ resource "azurerm_container_app" "app" {
 
   secret {
     name  = "redis-url"
-    value = "@Microsoft.KeyVault(SecretUri=${var.redis_hostname_secret_uri})"
+    value = data.azurerm_key_vault_secret.redis_uri.value
   }
 
   secret {
     name  = "redis-key"
-    value = "@Microsoft.KeyVault(SecretUri=${var.redis_password_secret_uri})"
+    value = data.azurerm_key_vault_secret.redis_key.value
   }
-
   template {
     container {
       name   = var.name
